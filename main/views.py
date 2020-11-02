@@ -4,20 +4,21 @@ from django.shortcuts import render,redirect
 from django.apps import apps
 import random
 from .models import Logical,Verbal,Test,Result
-import pyttsx3 
+import pyttsx3
 import speech_recognition as sr
-from pocketsphinx import LiveSpeech
+# from pocketsphinx import LiveSpeech
 from django.views.decorators.csrf import csrf_exempt,csrf_protect
 import js2py
 from bs4 import BeautifulSoup
 import urllib.request
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 import time
-from webdriver_manager.chrome import ChromeDriverManager
+# from webdriver_manager.chrome import ChromeDriverManager
 import requests
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+# from selenium.webdriver.common.by import By
+# from selenium.webdriver.support.ui import WebDriverWait
+# from selenium.webdriver.support import expected_conditions as EC
 import time
 
 from django.contrib.auth.models import User,auth
@@ -70,7 +71,7 @@ def tts(request):
 		o4 = request.POST.getlist("opti")
 		model= request.POST.get('mod')
 		Model= apps.get_model('main',model)
-		
+
 		if model=="Logical":
 			ss='sec1sum'
 		elif model=="Verbal":
@@ -79,7 +80,7 @@ def tts(request):
 		#print(answ,"ffffffffffffffffffffffffffffffffffffffffffff")
 		ques=str(ques[0])
 		ques=ques.split("?")
-		
+
 		o1=str(o1[0])
 		o1=o1.split("#")
 		o2=str(o2[0])
@@ -100,13 +101,12 @@ def tts(request):
 		engine = pyttsx3.init()
 		#engine.say("hello")
 		#print("sssssssssssssssssssssssssssssssssssssssssssssssss")
-		engine.setProperty("rate", 300) 
+		engine.setProperty("rate", 300)
 		#print((ques),"lllllllllllllllllllllllllllllllllllllllllllll")
 		#print("rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr")
 		#answe=[]
-		for i in range(0,len(ques)): 
+		for i in range(0,len(ques)):
 			x='Question is'
-			#print(x)
 			engine.say(x)
 			engine.say(ques[i])
 			x="Options are "
@@ -118,25 +118,102 @@ def tts(request):
 			engine.say("Option 3 is ")
 			engine.say(o3[i])
 			engine.say("Option 4 is ")
-			engine.say(o4[i]) 
+			engine.say(o4[i])
 			engine.say("Please speak the correct option ")
 			engine.runAndWait()
-			engine.stop()
+			# engine.stop()
+
+			r = sr.Recognizer()
+			c=0
+			# engine = pyttsx3.init()
+			# engine.setProperty("rate", 300)
+			with sr.Microphone() as source:
+				engine.say("Hey I am listening")
+				engine.runAndWait()
+				engine.stop()
+				while(c==0):
+					engine = pyttsx3.init()
+					audio_text = r.listen(source)
+					try:
+						print(r.recognize_google(audio_text))
+						if r.recognize_google(audio_text) in ['stop', 'top']:
+							break
+						elif r.recognize_google(audio_text) in ['repeat']:
+							engine.say("Repeating the question")
+							engine.runAndWait()
+							engine.stop()
+
+							chrome_driver=r"C:\Users\Yash\Desktop\Aptitude-test-platform-main\main\chromedriver.exe"
+							chromeOptions=webdriver.ChromeOptions()
+							print("Optionssss")
+							chromeOptions.add_experimental_option("debuggerAddress","127.0.0.1:9222")
+							print("DebuggerAdressssssssss")
+							driver=webdriver.Chrome(chrome_driver, options=chromeOptions)
+							print("driverrrrrr")
+							# print(driver.title)
+							# driver = webdriver.Chrome(r"C:\Users\Yash\Desktop\Aptitude-test-platform-main\main\chromedriver.exe")
+							# print("Hellooo next")
+							# driver.get("http://127.0.0.1:8000/logical")
+							button = driver.find_element_by_name("repp")
+							button.click()
+							print("clicked")
+							# break
+						elif r.recognize_google(audio_text) in ['option 1','option 2','option 3','option 4','option one','option two','option three','option four', 'option for','option to','option too']:
+							if(r.recognize_google(audio_text) in ['option 1','option one']):
+								a='a'
+							elif(r.recognize_google(audio_text) in ['option 2','option two','option to','option too']):
+								a='b'
+							elif(r.recognize_google(audio_text) in ['option 3','option three']):
+								a='c'
+							elif(r.recognize_google(audio_text) in ['option 4','option four','option for']):
+								a='d'
+
+							engine.say("Thanks")
+							engine.say("Going to next question")
+							engine.runAndWait()
+
+							c=1
+							engine.stop()
+
+							# chrome_driver=r"C:\Users\Yash\Desktop\a\main\chromedriver.exe"
+							# chrome_options=webdriver.ChromeOptions()
+							# print("Optionssss")
+							# chrome_options.add_experimental_option("debuggerAddress","127.0.0.1:9222")
+							# print("DebuggerAdressssssssss")
+							# driver=webdriver.Chrome(chrome_driver, options=chrome_options)
+							# print("driverrrrrr")
+							# print(driver.title)
+							# button = driver.find_element_by_name("nxt")
+							# button.click()
+
+							break
+						else:
+							engine.say("Try again,I am listening")
+							engine.runAndWait()
+							engine.stop()
+					except:
+						engine.say("Sorry, I did not get that")
+						engine.say("Try again, I am listening")
+						# engine.runAndWait()
+						engine.stop()
+
+
 			t=2
-			while t: 
+			while t:
 				mins, secs = divmod(t, 60)
 				timer = '{:02d}:{:02d}'.format(mins, secs)
 				print(timer, end="\r")
 				time.sleep(1)
 				t -= 1
-			
+
 			#print(o1)
 			z=str(o1[i])
 			if z[0]==",":
 				o1[i]=o1[i][1:]
 			answe=Model.objects.filter(la=o1[i])
 			#print(answe[0])
-			a='b'
+
+			# a='b'
 			try:
 				the_id=request.session['test_id']
 				the_rid=request.session['result_id']
@@ -150,7 +227,26 @@ def tts(request):
 				s1s=s1s+1
 				#print("++++++++++++++++!!1111111111111")
 				request.session[ss]=s1s
-		
+
+		engine = pyttsx3.init()
+		engine.setProperty("rate", 300)
+		engine.say("Submiting the test")
+		engine.runAndWait()
+		engine.stop()
+		chrome_driver=r"C:\Users\Yash\Desktop\Aptitude-test-platform-main\main\chromedriver.exe"
+		chromeOptions=webdriver.ChromeOptions()
+		print("Optionssss")
+		chromeOptions.add_experimental_option("debuggerAddress","127.0.0.1:9222")
+		print("DebuggerAdressssssssss")
+		driver=webdriver.Chrome(chrome_driver, options=chromeOptions)
+		print("driverrrrrr")
+		print(driver.title)
+		# driver = webdriver.Chrome(r"C:\Users\Yash\Desktop\Aptitude-test-platform-main\main\chromedriver.exe")
+		# print("Hellooo next")
+		# driver.get("http://127.0.0.1:8000/logical")
+		button = driver.find_element_by_name("submit")
+		button.click()
+
 		print(request.session[ss],"sssssssssssssssssssssssssssssssssssssss",ss)
 			#print(answe[0].ans,s1s,"fffffffffffffffffffffffffffffffffff")
 			#b=answe
@@ -173,14 +269,14 @@ def home(request):
 	return render(request, template_name)
 
 
-@login_required(login_url='/login/') 
+@login_required(login_url='/login/')
 def pscores(request):
 	s=Result.objects.filter(user=request.user)
 	template_name='Pscores.html'
 	return render(request, template_name,{'s':s})
 
- 
-@login_required(login_url='/login/') 
+
+@login_required(login_url='/login/')
 def instructions(request):
 	new_test=Test()
 	new_test.save()
@@ -195,19 +291,20 @@ def instructions(request):
 	return render(request, template_name)
 
 
-@login_required(login_url='/login/') 
+@login_required(login_url='/login/')
 def sec1ins(request):
 	template_name='Section1Instructions.html'
 	return render(request, template_name)
 
 
-@login_required(login_url='/login/')   
+@login_required(login_url='/login/')
 def sec1sub(request):
+	print("Sec1submitted")
 	template_name='Section1Submission.html'
 	return render(request, template_name)
 
 
-@login_required(login_url='/login/')  
+@login_required(login_url='/login/')
 def sec2ins(request):
 	template_name='Section2Instructions.html'
 	return render(request, template_name)
@@ -219,7 +316,7 @@ def sec2sub(request):
 	return render(request, template_name)
 
 
-@login_required(login_url='/login/') 
+@login_required(login_url='/login/')
 def result(request):
 	try:
 		the_id=request.session['test_id']
@@ -314,7 +411,7 @@ def logout(request):
 		#print("oooooooooooooooooooooooooooooooooooooooo")
 		return redirect('/')
 
-@login_required(login_url='/login/') 
+@login_required(login_url='/login/')
 def tts_repeat(request):
 	#print("888888888888888888888888888888888888888888888888888888")
 	if request.is_ajax and request.method == "POST":
@@ -328,7 +425,7 @@ def tts_repeat(request):
 
 		ques=str(ques[0])
 		ques=ques.split("?")
-		
+
 		o1=str(o1[0])
 		o1=o1.split("#")
 		o2=str(o2[0])
@@ -345,29 +442,36 @@ def tts_repeat(request):
 		o2 = [i for i in o2 if i != item]
 		o3 = [i for i in o3 if i != item]
 		o4 = [i for i in o4 if i != item]
-		#print(ques,"2222222222222222222222222222222")
+		# print(ques,"2222222222222222222222222222222")
 		engine = pyttsx3.init()
 		#engine.say("hello")
 		#print("sssssssssssssssssssssssssssssssssssssssssssssssss")
-		engine.setProperty("rate", 300) 
+		engine.setProperty("rate", 300)
 		#print((ques),"lllllllllllllllllllllllllllllllllllllllllllll")
 		#print("rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr")
 		#answe=[]
-		for i in range(0,len(ques)): 
+
+		# engine.say("Repeating question as you have clicked repeat button")
+		for i in range(0,len(ques)):
 			x='Question is'
 			#print(x)
 			engine.say(x)
+			# print("Question is said.......")
 			engine.say(ques[i])
+			# print(ques[i],"2222222222222222222222222222222")
+			# print("Speaking Question.......")
 			x="Options are "
 			engine.say(x)
+			print("Options are said.......")
 			engine.say("Option 1 is ")
 			engine.say(o1[i])
+			# print(o1[i],"2222222222222222222222222222222")
 			engine.say("Option 2 is ")
 			engine.say(o2[i])
 			engine.say("Option 3 is ")
 			engine.say(o3[i])
 			engine.say("Option 4 is ")
-			engine.say(o4[i]) 
+			engine.say(o4[i])
 			engine.say("Please speak the correct option ")
 			engine.runAndWait()
 			engine.stop()
